@@ -1,19 +1,26 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
+interface UserInfo {
+  name: string;
+  email: string;
+  picture: string;
+}
+
 function App() {
-  const [userInfo, setUserInfo] = useState(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   const login = () => {
     chrome.identity.getAuthToken({ interactive: true }, (token) => {
-      if (chrome.runtime.lastError || !token) {
+      const accessToken = typeof token === 'string' ? token : token?.token;
+      if (chrome.runtime.lastError || !accessToken) {
         console.error(chrome.runtime.lastError);
         return;
       }
 
-      fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${token}`)
+      fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`)
         .then((response) => response.json())
-        .then((data) => {
+        .then((data: UserInfo) => {
           setUserInfo(data);
           chrome.storage.sync.set({ userInfo: data });
         })
@@ -25,8 +32,9 @@ function App() {
 
   const logout = () => {
     chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      if (token) {
-        chrome.identity.removeCachedAuthToken({ token }, () => {
+      const accessToken = typeof token === 'string' ? token : token?.token;
+      if (accessToken) {
+        chrome.identity.removeCachedAuthToken({ token: accessToken }, () => {
           setUserInfo(null);
           chrome.storage.sync.remove('userInfo');
         });
@@ -35,7 +43,7 @@ function App() {
   };
 
   useEffect(() => {
-    chrome.storage.sync.get('userInfo', (data) => {
+    chrome.storage.sync.get('userInfo', (data: { userInfo?: UserInfo }) => {
       if (data.userInfo) {
         setUserInfo(data.userInfo);
       }
