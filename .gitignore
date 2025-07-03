@@ -36,3 +36,6 @@ coverage/
 
 # Misc
 *.local
+
+# Auth configuration with secrets
+src/config/auth.ts
