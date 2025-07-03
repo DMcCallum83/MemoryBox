@@ -1,20 +1,28 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension Boilerplate",
+  "name": "MemoryBox",
   "version": "1.0",
-  "permissions": ["identity", "storage"],
+  "description": "A Chrome extension to store and manage your memories.",
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "vite.svg",
+      "48": "vite.svg",
+      "128": "vite.svg"
+    }
   },
+  "permissions": [
+    "identity",
+    "storage",
+    "desktopCapture",
+    "activeTab",
+    "clipboardRead",
+    "clipboardWrite"
+  ],
   "background": {
-    "service_worker": "src/background.ts",
-    "type": "module"
+    "service_worker": "background.js"
   },
-  "oauth2": {
-    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile"
-    ]
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   }
 }

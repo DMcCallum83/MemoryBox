@@ -1,70 +1,44 @@
-import { useState, useEffect } from 'react';
-import './App.css';
-
-interface UserInfo {
-  name: string;
-  email: string;
-  picture: string;
-}
+import React, { useState, useEffect } from 'react';
+import { supabase } from './services/supabase';
+import { Session } from '@supabase/supabase-js';
+import { signInWithGoogle, signOut } from './services/AuthService';
 
 function App() {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-
-  const login = () => {
-    chrome.identity.getAuthToken({ interactive: true }, (token) => {
-      const accessToken = typeof token === 'string' ? token : token?.token;
-      if (chrome.runtime.lastError || !accessToken) {
-        console.error(chrome.runtime.lastError);
-        return;
-      }
-
-      fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`)
-        .then((response) => response.json())
-        .then((data: UserInfo) => {
-          setUserInfo(data);
-          chrome.storage.sync.set({ userInfo: data });
-        })
-        .catch((error) => {
-          console.error('Error fetching user info:', error);
-        });
-    });
-  };
-
-  const logout = () => {
-    chrome.identity.getAuthToken({ interactive: false }, (token) => {
-      const accessToken = typeof token === 'string' ? token : token?.token;
-      if (accessToken) {
-        chrome.identity.removeCachedAuthToken({ token: accessToken }, () => {
-          setUserInfo(null);
-          chrome.storage.sync.remove('userInfo');
-        });
-      }
-    });
-  };
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    chrome.storage.sync.get('userInfo', (data: { userInfo?: UserInfo }) => {
-      if (data.userInfo) {
-        setUserInfo(data.userInfo);
-      }
+    // Immediately check for an existing session when the app loads
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
     });
+
+    // Listen for changes in authentication state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed!', _event, session);
+      setSession(session);
+    });
+
+    // Cleanup the subscription when the component unmounts
+    return () => subscription.unsubscribe();
   }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Chrome Extension Boilerplate</h1>
-        {userInfo ? (
-          <div>
-            <p>Welcome, {userInfo.name}</p>
-            <p>{userInfo.email}</p>
-            <img src={userInfo.picture} alt="User profile" />
-            <button onClick={logout}>Logout</button>
-          </div>
-        ) : (
-          <button onClick={login}>Login with Google</button>
-        )}
-      </header>
+      <h1>MemoryBox</h1>
+      {!session ? (
+        <button onClick={signInWithGoogle}>Sign in with Google</button>
+      ) : (
+        <div>
+          <p>Welcome, {session.user.email}</p>
+          <button onClick={signOut}>Sign Out</button>
+        </div>
+      )}
     </div>
   );
 }

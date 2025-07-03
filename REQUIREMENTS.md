@@ -82,6 +82,9 @@ It's called MemoryBox.
 
 ## Theme
 
+Extension name/title: Memory Box
+Logo: a Brain or Box icon
+
 colours:
 - input background, button border: #ffffff
 - input text, button text, labels: #000000
